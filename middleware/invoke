@@ -1,4 +1,4 @@
 /usr/bin/invoke_app "$@" -t a3dapp \
-                         -C "start_jupyter -t -T -A @tool Launcher.ipynb" \
+                         -C "start_jupyter -t -A -T @tool Launcher.ipynb" \
 			 -r none \
                          -u anaconda-6
