@@ -1,0 +1,134 @@
+<style>
+    .VTKComponent{
+        padding: 20px;
+        display: flex;
+        flex-direction:column;    
+        font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+        font-style: normal;
+        font-size: 1.5em;
+        font-size: 13px;
+        color:#FFFFFF;
+        background-color: #F0F0F7    
+    }
+
+    .VTKComponentStep{
+        display:flex;
+        flex-direction:row;   
+        justify-content: space-between;
+        position:relative
+    }
+
+    .VTKComponentStepNode, .VTKComponentStepNodeSelected{
+        width:38px;
+        height:38px;  
+        border: 1px solid #6E99B4;
+        background-color: #6E99B4;
+        border-radius:38px;
+        display:flex;
+        justify-content:center;
+        align-items:center;    
+    }
+
+    .VTKComponentStepNodeSelected, .VTKComponentStepNode:hover{
+        background-color: #FFFFFF;
+        color: #4D4F5C;    
+
+    }
+
+    .VTKComponentStepLine{
+        height:3px;  
+        background-color: #6E99B4;
+        top: 22px;
+        position:relative;
+    }
+
+
+    .VTKComponentStepSpot:hover{
+        background-color: #FFFFFF;
+        color:#808495
+    }
+
+
+    .VTKComponentModel{
+        padding: 20px;
+    }
+
+    .VTKComponentLabel{
+        color: #808495;
+        width:auto;
+        font-size: 1.5em;
+        overflow: hidden;
+        white-space: nowrap; 
+        padding: 10px;
+        text-align: center;
+    }
+
+    .VtkComponentColors{
+        display:flex;
+        flex-direction:row;
+        flex-wrap:wrap;
+    }
+
+    .VtkComponentColor{
+        height: 40px;
+        width: 40px;
+        border-radius:40px
+    }
+
+    .VtkComponentColor:hover{
+        filter:blur(2px)
+    }
+    .VtkComponentCameras{
+        display:flex;
+        flex-direction:row;
+    }
+
+    .VtkComponentCamera{
+        width: 40px;
+        height: 40px;
+        background-color: white;
+        border-radius: 40px;
+        color: #2B5E91;
+        font-size: 18px;
+        position:relative;
+        text-align:center;
+    }
+
+    .VtkComponentColorSlider{
+        height: 40px;
+        width: auto;
+        position:relative;
+        display:flex;
+        flex-direction:row;
+        align-items: center;
+        flex: 1;
+    }
+
+    .VtkComponentColorSliderLine{
+        height: 20px;
+        flex: 1;
+        border-radius:20px; 
+        border: 1px solid #6E99B4;    
+        justify-content:space-between;
+        display:flex;
+        flex-direction:row;
+        font-size:11px;
+        align-items:center;
+    }
+
+    .VtkComponentColorSliderSpot{
+        height: 25px;
+        width: 50px;
+        border-radius:10px; 
+        position:absolute;
+        border: 1px solid #6E99B4;        
+        font-size: 11px;
+        align-items:center;
+        justify-content:center;
+        display:flex
+    }
+
+    .VtkComponentColorSliderSpot:hover{
+        filter:blur(2px)
+    }
+</style>
