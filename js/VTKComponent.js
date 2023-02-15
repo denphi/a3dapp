@@ -81,8 +81,6 @@ require.undef('A3DWidget')
                 constructor(props) {
                     super(props)
                     this.readers = new Array (this.props.samples)
-                    this.volumes = new Array (this.props.samples)
-                    this.path =  props.path  
                     this.filename = props.filename
                     this.dim_name = this.props.variable
                     this.plane = this.props.plane
@@ -92,10 +90,15 @@ require.undef('A3DWidget')
                     this.time = React.createRef();         
                     this.slice = React.createRef();         
                     this.color = React.createRef();         
-                    this.state = {"sim_step" : "Simulation Step (DepositionProcess - " + ((9)*100/9).toFixed(1) + "%)" , "step" : 9};
+                    this.state = {
+                        "sim_step" : "Simulation Step (DepositionProcess - " + ((9)*100/9).toFixed(1) + "%)" ,
+                        "step" : 9,
+                        'path' : props.path,
+                        'last_path' : ''
+                    };
                     this.cameras = React.createRef();  
                     let self = this;
-                    this.plugin = new VTKPlugin(1000, 500, this.path, [], function(a,b) { self.createReport(a,b) })
+                    this.plugin = new VTKPlugin(1000, 500, this.state.path, [], function(a,b) { self.createReport(a,b) })
                     this.uuids = Array.apply(null, Array(8)).map(function() { return Util.create_UUID() });
                 }
                 /**
@@ -111,58 +114,54 @@ require.undef('A3DWidget')
                 createReport(image1, image2){
 
                     let self = this;
-                    fetch(self.path + "../sim_data_card.json", [])
+                    fetch(self.state.path + "../sim_data_card.json", [])
                     .then(response => response.json())
                     .then(function (json) {
                         let data = json
                         data.event_series = "..."
-                        fetch(self.path + "job_card.json", [])
+                        fetch(self.state.path + "job_card.json", [])
                             .then(response2 => response2.json())
                             .then(function (json2) {
                             let job = json2
-                            var openPrint = window.open('printReport.html');
-                            openPrint.onload = function() {
-                                var img1 = new Image();
+                            var openPrint = window.open('','','height=768,width=1024');
+                            var img1 = new Image();
 
-                                img1.src = image1;
-                                var img2 = new Image();
-                                img2.src = image2;
-                                var doc = openPrint.document;
+                            img1.src = image1;
+                            var img2 = new Image();
+                            img2.src = image2;
+                            var doc = openPrint.document;
 
-                                var title = doc.createElement("h1")
-                                title.innerHTML = self.dim_name
-                                doc.body.appendChild(title);	
+                            var title = doc.createElement("h1")
+                            title.innerHTML = self.dim_name
+                            openPrint.document.write(title.outerHTML);
 
-                                var title1 = doc.createElement("h2")
-                                title1.innerHTML = "Simulation Data Card"
-                                doc.body.appendChild(title1);	
-                                var paramsd = doc.createElement("pre")
-                                paramsd.innerHTML = JSON.stringify(data, null, '  ')
-                                doc.body.appendChild(paramsd);	
+                            var title1 = doc.createElement("h2")
+                            title1.innerHTML = "Simulation Data Card"
+                            openPrint.document.write(title1.outerHTML);
+                            
+                            var paramsd = doc.createElement("pre")
+                            paramsd.innerHTML = JSON.stringify(data, null, '  ')
+                            openPrint.document.write(paramsd.outerHTML);
 
-                                var title2 = doc.createElement("h2")
-                                title2.innerHTML = "Simulation Job Card"
-                                doc.body.appendChild(title2);	
-                                var paramsj = doc.createElement("pre")
-                                paramsj.innerHTML = JSON.stringify(job, null, '  ')
-                                doc.body.appendChild(paramsj);	
+                            var title2 = doc.createElement("h2")
+                            title2.innerHTML = "Simulation Job Card"
+                            openPrint.document.write(title2.outerHTML);
 
-                                var title3 = doc.createElement("h2")
-                                title3.innerHTML = self.state.sim_step
-                                doc.body.appendChild(title3);	
+                            var paramsj = doc.createElement("pre")
+                            paramsj.innerHTML = JSON.stringify(job, null, '  ')
+                            openPrint.document.write(paramsj.outerHTML);
 
-                                var div1 = doc.createElement("div")
-                                div1.innerHTML = img1.outerHTML
-                                doc.body.appendChild(div1);	
+                            var title3 = doc.createElement("h2")
+                            title3.innerHTML = self.state.sim_step
+                            openPrint.document.write(title3.outerHTML);
 
-                                var title4 = doc.createElement("h2")
-                                title4.innerHTML = "Slice (" + String(self.plugin.current_slice) + ") on plane " + self.plane 
-                                doc.body.appendChild(title4);	
+                            var div1 = doc.createElement("div")
+                            div1.innerHTML = img1.outerHTML
+                            openPrint.document.write(div1.outerHTML);
 
-                                var div3 = doc.createElement("div")
-                                div3.innerHTML = img2.outerHTML
-                                doc.body.appendChild(div3);				
-                            };
+                            var div3 = doc.createElement("div")
+                            div3.innerHTML = img2.outerHTML
+                            openPrint.document.write(div3.outerHTML);
                         })		
                     })		
                 }
@@ -179,15 +178,9 @@ require.undef('A3DWidget')
                     if (slice == self.props.samples){
                         self.RenderSlices()
                     } else {
-                        self.setMessage('Loading ' + self.path + self.filename + '_' + slice + '.vtp ...')
-                        self.readers[slice].setUrl(self.path + self.filename + '_' + slice + '.vtp').then( function(value){
-                            self.setMessage('Loading ' + self.path + self.filename + '_' + slice + '_' + self.plane + '_' + self.dim_name + '.vti ...')
-                            self.volumes[slice].setUrl(self.path + self.filename + '_' + slice + '_' + self.plane + '_' + self.dim_name + '.vti').then( function(value){
-                                self.ReadSlice(slice+1)
-                            }).catch(function(value){
-                                self.volumes[slice] = null;
-                                self.ReadSlice(slice+1)
-                            })
+                        self.setMessage('Loading ' + self.state.path + self.filename + '_' + slice + '.vtp ...')
+                        self.readers[slice].setUrl(self.state.path + self.filename + '_' + slice + '.vtp').then( function(value){
+                            self.ReadSlice(slice+1)
                         })
                     }
                 }  
@@ -197,10 +190,9 @@ require.undef('A3DWidget')
                 */
                 RenderSlices(){
                     this.setMessage('Rendering ...')
-                    if (this.plugin.setData(this.readers, this.volumes, this.dim_name, this.plane)){
+                    if (this.plugin.setData(this.readers, this.dim_name, this.plane)){
                         this.plugin.container.style.display='block'
                         this.selectTimeLegend(this.state.step)        
-                        this.selectSlice(this.plugin.current_slice)        
                         this.selectLut(this.plugin.current_lut)        
                         this.setMessage('')
                     } else {
@@ -235,13 +227,6 @@ require.undef('A3DWidget')
 
                 saveImage (){
                     this.plugin.saveImage()
-                }
-
-                selectSlice(slice){
-                    if (this.slice.current){            
-                        this.slice.current.setState({total:this.plugin.n_slices, current:this.plugin.current_slice})
-                    }
-                    this.plugin.selectSlice(slice)
                 }
                 /**
                 * This method configure all children components to a color set (LUT transfer function) 
@@ -293,13 +278,9 @@ require.undef('A3DWidget')
                     children.push(React.createElement("div", {key:this.uuids[1], className:"VTKComponentLabel", ref:this.message}, "Loading..."));
                     children.push(React.createElement(VtkComponentColors, {key:this.uuids[2], ref:this.color, deformation:32, variable:self.dim_name, onDisplacement:function(disp){self.onDisplacement(disp)}, onSelected:function(sel){ self.selectLut(sel)}, onChange:function(min,max){self.onChangeRange(min,max)}}))
                     children.push(React.createElement(VtkComponentCamera, {key:this.uuids[3], ref:this.cameras, onClick:function(u,v){ self.rotateXYZ(u,v)}, onScreenShot:function(e){ self.saveImage()}}));
-                    //children.push(React.createElement(VTKComponentStep, {key:this.uuids[4], name:"Simulation Step", ref:this.time, onSelected:function(s){self.selectTimeLegend(s)}}));
                     children.push(React.createElement("div", {key:Util.create_UUID(), className:"VTKComponentLabel"}, self.state.sim_step));
                     children.push(React.createElement(Material.Slider, {key:this.uuids[4], marks:true, value:this.state.step, min:0, max:12, step:1, onChange:function(e,s){self.selectTimeLegend(s)}}));
                     children.push(React.createElement("div", {key:this.uuids[5], className:"VTKComponentModel", ref:this.cont}));
-                    //children.push(React.createElement(VTKComponentStep, {key:this.uuids[6], name:"Slice", ref:this.slice, onSelected:function(s){self.selectSlice(s)}}));
-                    children.push(React.createElement("div", {key:Util.create_UUID(), className:"VTKComponentLabel"}, "Plane for view cut"));
-                    children.push(React.createElement(Material.Slider, {key:Util.create_UUID(), marks:true, defaultValue:5, min:0, max:9, step:1, onChange:function(e,s){self.selectSlice(s)}}));
                     var div = React.createElement("div", {key:this.uuids[7], className:"VTKComponent", style:{width:"auto"}}, children )
                     return div;     
                 }    
@@ -313,10 +294,9 @@ require.undef('A3DWidget')
                     this.plugin.setupWindows()
                     for (var i=0; i < this.props.samples; i++){
                         this.readers[i] = vtk.IO.XML.vtkXMLPolyDataReader.newInstance();
-                        this.volumes[i] = vtk.IO.XML.vtkXMLImageDataReader.newInstance();
                     }
-                    if (self.path != ""){
-                        this.ReadSlice(0);
+                    if (this.state.path != "" && this.state.path != this.state.last_path){
+                        this.setState({'last_path' :  this.state.path}, ()=>this.ReadSlice(0))
                     }
                 }    
 
@@ -956,21 +936,22 @@ require.undef('A3DWidget')
                         return;
                     this.scalefactor = scalefactor
                     this.updatePolydata(this.scalefactor)
-                    this.surfaceMapper.setInputData(this.polydata[this.current_time].getOutputData(0));
+                    let next = this.current_time+1;
+                    if (next >= this.polydata.length)
+                        next = this.current_time;
+                    this.surfaceMapper.setInputData(this.polydata[next].getOutputData(0));
                     this.mainMapper.setInputData(this.polydata[this.current_time].getOutputData(0));
-                    //this.sliceMapper.setInputData(this.volumes[this.current_time].getOutputData(0));
                     this.mainWindow.getRenderWindow().render();
                     this.sliceWindow.getRenderWindow().render();
                 }
 
-                this.setData = function (readers, volumes, label, slice){
+                this.setData = function (readers, label, slice){
                     this.readers = readers
                     this.slice = slice
                     this.scalefactor = 32
                     this.createNormals()
                     this.updatePolydata(this.scalefactor);
                     this.n_samples = readers.length
-                    this.volumes = new Array(volumes.length)
                     this.label = label
                     this.current_time = this.n_samples-1
                     this.current_slice = Math.floor(this.n_samples/2)
@@ -995,47 +976,6 @@ require.undef('A3DWidget')
                     var min_range = Math.min(...ranges_l.filter(i => i !== null))
                     var max_range = Math.max(...ranges_h.filter(i => i !== null))		
                     this.range = [min_range, max_range]
-                    this.n_slices = null;
-                    for (var i=0; i < this.n_samples; i++){
-                        if (volumes[i] != null){
-                            this.volumes[i]=vtk.Filters.General.vtkCalculator.newInstance()
-                            this.volumes[i].setFormula({
-                                getArrays: function(inputDataSets){
-                                    return {
-                                        input: [{ location: vtk.Common.DataModel.vtkDataSet.FieldDataTypes.POINT, name:label }], 
-                                        output: [{ location: vtk.Common.DataModel.vtkDataSet.FieldDataTypes.UNIFORM, name: 'DUMMY' }]
-                                    }
-                                },
-                                evaluate: (arraysIn, arraysOut) => { }
-                            });
-                            this.volumes[i].setInputData(volumes[i].getOutputData(0));
-                            this.volumes[i].update()
-                            var data = this.volumes[i].getOutputData(0)
-                            var extend = data.getExtent();
-                            if (this.slice == "I"){
-                                if(this.n_slices == null)
-                                    this.n_slices = extend[1]-extend[0] + 1
-                                else
-                                    this.n_slices = Math.min(this.n_slices, extend[1]-extend[0] + 1)
-                            }
-                            if (this.slice == "J"){
-                                if(this.n_slices == null)
-                                    this.n_slices = extend[3]-extend[2] + 1
-                                else
-                                    this.n_slices = Math.min(this.n_slices, extend[3]-extend[2] + 1)
-                            }
-                            if (this.slice == "K"){
-                                if(this.n_slices == null)
-                                    this.n_slices = extend[5]-extend[4] + 1
-                                else
-                                    this.n_slices = Math.min(this.n_slices, extend[5]-extend[4] + 1)
-                            }
-                            var tmp = data.getPointData().getArray(label)
-                            this.volumes[i].getOutputData(0).getPointData().setScalars(tmp)
-                        } else {
-                            this.volumes[i] = null;
-                        }
-                    }
 
                     var ofun = vtk.Common.DataModel.vtkPiecewiseFunction.newInstance()
                     //ofun.addPoint(min_range, 1);
@@ -1044,8 +984,6 @@ require.undef('A3DWidget')
                     ofun.addPoint(0.01, 1);
                     //ofun.addPoint(max_range, 1);
 
-
-
                     this.mainMapper.setLookupTable(this.lut);
                     this.mainMapper.setScalarModeToUsePointFieldData();
                     this.mainMapper.setArrayAccessMode(this.mainMapper.BY_NAME);
@@ -1053,37 +991,33 @@ require.undef('A3DWidget')
                     this.mainMapper.setScalarVisibility(true);
                     this.mainMapper.setScalarRange(this.range);
                     this.mainMapper.setInputData(this.polydata[this.current_time].getOutputData(0));
-                    //this.mainMapper.setInputData(this.polydata[this.current_time].getOutputData(0));
                     this.mainWindow.getRenderer().setBackground(1, 1, 1)
                     this.mainWindow.getRenderer().addActor(this.mainActor);
                     this.mainWindow.getRenderer().addActor(this.baseActor);
                     this.mainWindow.getRenderer().resetCamera();
                     this.mainWindow.getRenderWindow().render(); 
 
-                    this.surfaceActor.getProperty().setColor(0,0,0)
-                    this.surfaceActor.getProperty().setOpacity(0.01)
-                    this.surfaceMapper.setInputData(this.polydata[this.current_time].getOutputData(0));
-                    this.sliceActor.getProperty().setRGBTransferFunction(this.lut);
-                    this.sliceActor.getProperty().setScalarOpacity(ofun);
-                    if (this.volumes[this.current_time] != null){
-                        this.sliceMapper.setInputData(this.volumes[this.current_time].getOutputData(0))
-                    }
-                    if (this.slice == "I")
-                        this.sliceMapper.setISlice(this.current_slice);
-                    if (this.slice == "J")
-                        this.sliceMapper.setJSlice(this.current_slice);
-                    if (this.slice == "K")
-                        this.sliceMapper.setKSlice(this.current_slice);
+
+                    this.surfaceMapper.setLookupTable(this.lut);
+                    this.surfaceMapper.setScalarModeToUsePointFieldData();
+                    this.surfaceMapper.setArrayAccessMode(this.mainMapper.BY_NAME);
+                    this.surfaceMapper.setColorByArrayName(label);
+                    this.surfaceMapper.setScalarVisibility(true);
+                    this.surfaceMapper.setScalarRange(this.range);
+                    let next = this.current_time+1;
+                    if (next >= this.polydata.length)
+                        next = this.current_time;
+                    this.surfaceMapper.setInputData(this.readers[next].getOutputData(0));
+
+                    
                     this.sliceWindow.getRenderer().setBackground(1, 1, 1)
                     this.sliceWindow.getRenderer().addActor(this.surfaceActor);
-                    this.sliceWindow.getRenderer().addActor(this.sliceActor);
                     this.sliceWindow.getRenderer().addActor(this.baseActor);        
                     this.sliceWindow.getRenderer().resetCamera();
                     this.sliceWindow.getRenderWindow().render(); 
 
                     this.createTimeLegend();
                     this.createLutLegend();        
-                    this.createSliceLegend();
                     this.createViewLegend();
                     this.drawColorList();
                     this.selectLut("rainbow") // Default Color
@@ -1155,6 +1089,7 @@ require.undef('A3DWidget')
                     if (range[0] == lower && range[1]==upper)
                         return;
                     this.mainMapper.setScalarRange([lower, upper]);
+                    this.surfaceMapper.setScalarRange([lower, upper]);
                     this.drawLutLegend()
                     this.onChangeRange()
                 }
@@ -1163,11 +1098,12 @@ require.undef('A3DWidget')
                     if (this.current_time == value)
                         return;
                     this.current_time = value;
-                    this.surfaceMapper.setInputData(this.polydata[this.current_time].getOutputData(0));
+                    let next = this.current_time+1;
+                    if (next >= this.polydata.length)
+                        next = this.current_time;
+                    this.surfaceMapper.setInputData(this.polydata[next].getOutputData(0));
                     this.mainMapper.setInputData(this.polydata[this.current_time].getOutputData(0));
-                    if(this.volumes[this.current_time] != null){
-                        this.sliceMapper.setInputData(this.volumes[this.current_time].getOutputData(0));
-                    }
+
                     this.mainWindow.getRenderWindow().render();
                     this.sliceWindow.getRenderWindow().render();
                     this.drawTimeLegend()
@@ -1207,82 +1143,6 @@ require.undef('A3DWidget')
                     this.drawTimeLegend(this.current_time)
                 }
 
-
-                this.createSliceLegend = function(){
-                    var self = this;
-                    var container = this.slicerContainer
-                    container.addEventListener('click', function(event) {
-                        var elemLeft = container.offsetLeft;
-                        var elemTop = container.offsetTop;
-                        var width = container.width;
-                        var height = container.height;
-                        var x = event.pageX - elemLeft;
-                        var delta = (x-50)/(width-60)
-                        if (delta < 0)
-                            delta = 0
-                        if (delta > 1)
-                            delta = 1
-                        delta = delta
-                        var selector = Math.round((1-delta)*(self.n_samples-1))
-                        self.selectSlice(selector)
-                    }, false);        
-                    container.addEventListener('dblclick', function(event) {
-                       var selector = prompt("Please enter slice", "0");
-                       if (selector){
-                           selector = selector*1
-                           if( isNaN(selector))
-                               selector = 0
-                           if(selector < 0)
-                               selector = 0
-                           if (selector > self.n_slices-1)
-                               selector = self.n_slices-1
-                           self.selectSlice(selector)
-                       }
-                    }, false);
-
-                    this.drawSliceLegend()
-
-                }
-
-
-                this.drawSliceLegend = function(){
-                    var container = this.slicerContainer
-                    var n_slices = this.n_slices
-                    var label = "SLICE"
-                    var value = this.current_slice
-                    var width = container.width
-                    var height = container.height
-                    var top_padding = Math.ceil((height - 20)/2)
-                    var range = [0,n_slices-1]
-                    var ctx = container.getContext("2d");
-                    var delta = 1/(n_slices-1)
-                    ctx.clearRect(0, 0, width, height);
-                    ctx.fillStyle = "black";
-                    ctx.font = "12px Arial";
-                    ctx.fillText(label,5, top_padding + 10);
-                    ctx.fillStyle = "black";
-                    ctx.font = "12px Arial";
-                    var delta = 1/(n_slices-1)
-                    var range_delta = (range[1]-range[0])/(n_slices-1)
-                    var t_available_width = width -60
-
-                    for (var il=0;il<n_slices;il++){
-                        var c = Math.ceil((t_available_width)*delta*il + 50)            
-                        var r = range_delta*(il) + range[0]
-                        ctx.beginPath();                
-                        ctx.arc(c, top_padding+3, 4, 0, 2 * Math.PI);
-                        ctx.closePath();
-                        ctx.stroke(); 
-                        ctx.fillText(r.toFixed(0) , c-2, top_padding+18); 
-                    }
-
-                    var lr = (range[1]-value)/(range[1]-range[0]);
-                    var c = Math.ceil((t_available_width)*lr + 50)            
-                    ctx.beginPath();                
-                    ctx.arc(c, top_padding+3, 4, 0, 2 * Math.PI);
-                    ctx.closePath();
-                    ctx.fill();            
-                }
 
                 this.drawTimeLegend = function(){
                     var container = this.timeContainer
@@ -1588,20 +1448,6 @@ require.undef('A3DWidget')
                     this.mainWindow.getRenderWindow().render();
                 }
 
-                this.selectSlice = function(value){
-                    if (this.current_slice == value)
-                        return;
-                    this.current_slice = value
-                    if (this.slice == "I")
-                        this.sliceMapper.setISlice(this.current_slice);
-                    if (this.slice == "J")
-                        this.sliceMapper.setJSlice(this.current_slice);
-                    if (this.slice == "K")
-                        this.sliceMapper.setKSlice(this.current_slice);
-                    this.sliceWindow.getRenderWindow().render();
-                    this.drawSliceLegend()
-                    this.onChangeSlice()
-                }
 
                 this.saveImage = function(){
                     this.mainWindow.getOpenGLRenderWindow().captureNextImage().then((image_raw1) => {
@@ -1612,7 +1458,6 @@ require.undef('A3DWidget')
                     });
                     this.mainWindow.getRenderWindow().render();
                 }
-                this.onChangeSlice = function(){}
                 this.onChangeTime = function(){}
                 this.onChangeRange = function(){}
 
@@ -1633,11 +1478,6 @@ require.undef('A3DWidget')
                 this.surfaceMapper.setScalarModeToUsePointFieldData()
                 this.surfaceMapper.setInterpolateScalarsBeforeMapping(false)
                 this.surfaceActor.setMapper(this.surfaceMapper);                
-
-
-                this.sliceActor   = vtk.Rendering.Core.vtkImageSlice.newInstance();
-                this.sliceMapper  = vtk.Rendering.Core.vtkImageMapper.newInstance();
-                this.sliceActor.setMapper(this.sliceMapper);
 
                 this.axesReader = vtk.IO.XML.vtkXMLPolyDataReader.newInstance();
                 this.axesActor = vtk.Rendering.Core.vtkActor.newInstance();           
@@ -1660,7 +1500,6 @@ require.undef('A3DWidget')
                 this.lut.setVectorModeToComponent();
 
                 this.polydata = new Array ()
-                this.volumes = new Array ()
 
                 this.buildContainer();
             }
@@ -1681,22 +1520,25 @@ require.undef('A3DWidget')
                         'samples' : backbone.model.get('samples'),
                         'path' : backbone.model.get('path')
                     };
+                    //debugger;
                 }; 
                 render(){
                     let self = this;
                     var children = Array()
                     if (this.state.filename != undefined && this.state.filename != ""){
                         if (this.state.variable != undefined && this.state.variable != "")
-                            children.push(React.createElement(VTKComponent, {
-                                key:Util.create_UUID(), 
-                                filename:this.state.filename, 
-                                variable:this.state.variable, 
-                                plane:this.state.plane, 
-                                samples:this.state.samples, 
-                                path : this.state.path
-                            }));
+                            ;//children.push();
                     } 
-                    var div = React.createElement("div", {key:Util.create_UUID(), className:"VtkComponentLoader"}, children)
+                    var div = React.createElement("div", {key:Util.create_UUID(), className:"VtkComponentLoader"}, [
+                        React.createElement(VTKComponent, {
+                            key:'a3dwidgetid', 
+                            filename:this.state.filename, 
+                            variable:this.state.variable, 
+                            plane:this.state.plane, 
+                            samples:this.state.samples, 
+                            path : this.state.path
+                        })
+                    ])
                     return div
                 }
             }
@@ -1729,7 +1571,7 @@ require.undef('A3DWidget')
             }
             backbone.app = document.createElement('div');
             backbone.app.style.padding = '10px';
-            const App = React.createElement(A3DWidget);
+            const App = React.createElement(A3DWidget, {key:'uniqueid'});
             ReactDOM.render(App, backbone.app);
             backbone.el.append(backbone.app);
         },
