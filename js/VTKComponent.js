@@ -91,7 +91,8 @@ require.undef('A3DWidget')
                     this.slice = React.createRef();         
                     this.color = React.createRef();         
                     this.state = {
-                        "sim_step" : "Simulation Step (DepositionProcess - " + ((9)*100/9).toFixed(1) + "%)" ,
+                        "sim_step1" : "Simulation Step (DepositionProcess - " + ((9)*100/9).toFixed(1) + "%)" ,
+                        "sim_step2" : "Simulation Step (DepositionProcess - " + ((9)*100/9).toFixed(1) + "%)" ,
                         "step" : 9,
                         'path' : props.path,
                         'last_path' : ''
@@ -152,8 +153,12 @@ require.undef('A3DWidget')
                             openPrint.document.write(paramsj.outerHTML);
 
                             var title3 = doc.createElement("h2")
-                            title3.innerHTML = self.state.sim_step
+                            title3.innerHTML = self.state.sim_step1
                             openPrint.document.write(title3.outerHTML);
+
+                            var title4 = doc.createElement("h3")
+                            title4.innerHTML = self.state.sim_step2
+                            openPrint.document.write(title4.outerHTML);
 
                             var div1 = doc.createElement("div")
                             div1.innerHTML = img1.outerHTML
@@ -208,16 +213,27 @@ require.undef('A3DWidget')
                 */    
                 selectTimeLegend(time){
                     if (this.time.current){    
-                        this.setState({"sim_step" :"Simulation Step" })       
+                        this.setState({"sim_step1" :"Simulation Step" })       
+                        this.setState({"sim_step2" :"Simulation Step" })       
                         this.time.current.setState({total:this.plugin.n_samples, current:this.plugin.current_time})
                     }
                     if (time>=10 && time<12)
-                        { this.setState({"sim_step" :"Simulation Step (CoolingProcessOnBed - " + ((time-10)*100/1).toFixed(1) + "%)", "step":time }) }
-                    else if (time>=12 && time<14)
-                        { this.setState({"sim_step" :"Simulation Step (CoolingProcessOffBed - " + ((time-12)*100/1).toFixed(1) + "%)", "step":time  }) }
+                        { this.setState({"sim_step1" :"Simulation Step (CoolingProcessOnBed - " + ((time-10)*100/1).toFixed(1) + "%)", "step":time }) }
+                    else if (time>=14)
+                        { this.setState({"sim_step1" :"Simulation Step (CoolingProcessOffBed - 100%)", "step":time  }) }
+                    else if (time>=12)
+                        { this.setState({"sim_step1" :"Simulation Step (CoolingProcessOffBed - " + ((time-12)*100/1).toFixed(1) + "%)", "step":time  }) }
                     else 
-                        { this.setState({"sim_step" :"Simulation Step (DepositionProcess - " +  ((time)*100/9).toFixed(1) + "%)", "step":time  }) }
+                        { this.setState({"sim_step1" :"Simulation Step (DepositionProcess - " +  ((time)*100/9).toFixed(1) + "%)", "step":time  }) }
                     this.plugin.selectTimeLegend(time)
+                    if ((time+1)>=10 && (time+1)<12)
+                        { this.setState({"sim_step2" :"Simulation Step (CoolingProcessOnBed - " + (((time+1)-10)*100/1).toFixed(1) + "%)", "step":time }) }
+                    else if ((time+1)>=14)
+                        { this.setState({"sim_step2" :"Simulation Step (CoolingProcessOffBed - 100%)", "step":time  }) }
+                    else if ((time+1)>=12)
+                        { this.setState({"sim_step2" :"Simulation Step (CoolingProcessOffBed - " + (((time+1)-12)*100/1).toFixed(1) + "%)", "step":time  }) }
+                    else 
+                        { this.setState({"sim_step2" :"Simulation Step (DepositionProcess - " +  (((time+1))*100/9).toFixed(1) + "%)", "step":time  }) }
                 }
                 /**
                 * This method configure all children components to a new slice 
@@ -278,8 +294,11 @@ require.undef('A3DWidget')
                     children.push(React.createElement("div", {key:this.uuids[1], className:"VTKComponentLabel", ref:this.message}, "Loading..."));
                     children.push(React.createElement(VtkComponentColors, {key:this.uuids[2], ref:this.color, deformation:32, variable:self.dim_name, onDisplacement:function(disp){self.onDisplacement(disp)}, onSelected:function(sel){ self.selectLut(sel)}, onChange:function(min,max){self.onChangeRange(min,max)}}))
                     children.push(React.createElement(VtkComponentCamera, {key:this.uuids[3], ref:this.cameras, onClick:function(u,v){ self.rotateXYZ(u,v)}, onScreenShot:function(e){ self.saveImage()}}));
-                    children.push(React.createElement("div", {key:Util.create_UUID(), className:"VTKComponentLabel"}, self.state.sim_step));
                     children.push(React.createElement(Material.Slider, {key:this.uuids[4], marks:true, value:this.state.step, min:0, max:12, step:1, onChange:function(e,s){self.selectTimeLegend(s)}}));
+                    
+                    children.push(React.createElement("div", {key:Util.create_UUID(), style:{display:"flex"}}, [React.createElement("div", {key:Util.create_UUID(), style:{flex:"1"}, className:"VTKComponentLabel"}, self.state.sim_step1),
+                    React.createElement("div", {key:Util.create_UUID(), style:{flex:"1"}, className:"VTKComponentLabel"}, self.state.sim_step2)]));
+                    
                     children.push(React.createElement("div", {key:this.uuids[5], className:"VTKComponentModel", ref:this.cont}));
                     var div = React.createElement("div", {key:this.uuids[7], className:"VTKComponent", style:{width:"auto"}}, children )
                     return div;     
@@ -642,6 +661,8 @@ require.undef('A3DWidget')
                                     React.createElement("div", {key:Util.create_UUID(), className:"VtkComponentColor", style:{background: "white"}, onClick:function(){self.upDeformation()}}, [
                                         React.createElement("i", {key:Util.create_UUID(), className:"fa fa-search-plus", style:{padding: "10px 10px", fontSize: "20px", color: "black"}})
                                     ]),
+                                    React.createElement("div", {key:Util.create_UUID(), className:"VtkComponentColor", style:{background: "white", color:"black", border:"1px solid black", padding:"10px 4px"}}, [self.state.deformation, "x"]),
+                                    
                                 ])
                                 circ4 = React.createElement("div", {key:Util.create_UUID(), className:"VtkComponentColor", style:{background: "white"}, onClick:function(){self.showModes()}}, [
                                     React.createElement("i", {key:Util.create_UUID(), className:"fa fa-cog", style:{padding: "10px 10px", fontSize: "20px", color: "black"}})
