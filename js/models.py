@@ -13,7 +13,7 @@ class A3DWidget(DOMWidget):
     _view_module = Unicode('A3DWidget').tag(sync=True)
     _view_module_version = Unicode('0.1.0').tag(sync=True)
 
-    filename = Unicode('').tag(sync=True)
+    filenames = List([]).tag(sync=True)
     variable = Unicode('').tag(sync=True)
     plane = Unicode('').tag(sync=True)
     path = Unicode('').tag(sync=True)

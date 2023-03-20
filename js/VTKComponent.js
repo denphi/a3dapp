@@ -75,13 +75,13 @@ require.undef('A3DWidget')
                 * @constructor
                 * @author: denphi, denphi@denphi.com, Purdue University
                 * @param {props} a dict with the properties required by the SideMenu.
-                *         props.filename string with the filename 
+                *         props.filenames string with the filenames
                 *         props.variable string with the component dimension on the vtk file
                 */	
                 constructor(props) {
                     super(props)
                     this.readers = new Array (this.props.samples)
-                    this.filename = props.filename
+                    this.filenames = props.filenames
                     this.dim_name = this.props.variable
                     this.plane = this.props.plane
                     this.cont = React.createRef();         
@@ -112,6 +112,11 @@ require.undef('A3DWidget')
                         this.message.current.innerHTML = message        
                 }
 
+                static stepToString(a){
+                    let b = a.replace(".vtp","").split("_");
+                    return b[b.length-2] + "(frame=" + b[b.length-1] + ")";
+                }
+                
                 createReport(image1, image2){
 
                     let self = this;
@@ -156,13 +161,13 @@ require.undef('A3DWidget')
                             title3.innerHTML = self.state.sim_step1
                             openPrint.document.write(title3.outerHTML);
 
-                            var title4 = doc.createElement("h3")
-                            title4.innerHTML = self.state.sim_step2
-                            openPrint.document.write(title4.outerHTML);
-
                             var div1 = doc.createElement("div")
                             div1.innerHTML = img1.outerHTML
                             openPrint.document.write(div1.outerHTML);
+
+                            var title4 = doc.createElement("h2")
+                            title4.innerHTML = self.state.sim_step2
+                            openPrint.document.write(title4.outerHTML);
 
                             var div3 = doc.createElement("div")
                             div3.innerHTML = img2.outerHTML
@@ -172,7 +177,7 @@ require.undef('A3DWidget')
                 }
 
                 /**
-                * Internal function that loads a slice from the filename, it calls recursivelly until all slices are loaded
+                * Internal function that loads a slice from the filenames, it calls recursivelly until all slices are loaded
                 *
                 * @param {slice} int, index of the slice to be loaded
                 */
@@ -183,8 +188,8 @@ require.undef('A3DWidget')
                     if (slice == self.props.samples){
                         self.RenderSlices()
                     } else {
-                        self.setMessage('Loading ' + self.state.path + self.filename + '_' + slice + '.vtp ...')
-                        self.readers[slice].setUrl(self.state.path + self.filename + '_' + slice + '.vtp').then( function(value){
+                        self.setMessage('Loading ' + self.filenames[slice] + '')
+                        self.readers[slice].setUrl(self.state.path + self.filenames[slice]).then( function(value){
                             self.ReadSlice(slice+1)
                         })
                     }
@@ -213,27 +218,18 @@ require.undef('A3DWidget')
                 */    
                 selectTimeLegend(time){
                     if (this.time.current){    
-                        this.setState({"sim_step1" :"Simulation Step" })       
-                        this.setState({"sim_step2" :"Simulation Step" })       
+                        this.setState({"sim_step1" :"", "sim_step2" :"" })       
                         this.time.current.setState({total:this.plugin.n_samples, current:this.plugin.current_time})
                     }
-                    if (time>=10 && time<12)
-                        { this.setState({"sim_step1" :"Simulation Step (CoolingProcessOnBed - " + ((time-10)*100/1).toFixed(1) + "%)", "step":time }) }
-                    else if (time>=14)
-                        { this.setState({"sim_step1" :"Simulation Step (CoolingProcessOffBed - 100%)", "step":time  }) }
-                    else if (time>=12)
-                        { this.setState({"sim_step1" :"Simulation Step (CoolingProcessOffBed - " + ((time-12)*100/1).toFixed(1) + "%)", "step":time  }) }
-                    else 
-                        { this.setState({"sim_step1" :"Simulation Step (DepositionProcess - " +  ((time)*100/9).toFixed(1) + "%)", "step":time  }) }
+                    let time2 = time+1;
+                    if (time2 >= this.props.filenames.length)
+                        time2 = time
+                    this.setState({
+                        "sim_step1" : VTKComponent.stepToString(this.props.filenames[time]), 
+                        "sim_step2" : VTKComponent.stepToString(this.props.filenames[time2]),
+                        "step":time 
+                    }) 
                     this.plugin.selectTimeLegend(time)
-                    if ((time+1)>=10 && (time+1)<12)
-                        { this.setState({"sim_step2" :"Simulation Step (CoolingProcessOnBed - " + (((time+1)-10)*100/1).toFixed(1) + "%)", "step":time }) }
-                    else if ((time+1)>=14)
-                        { this.setState({"sim_step2" :"Simulation Step (CoolingProcessOffBed - 100%)", "step":time  }) }
-                    else if ((time+1)>=12)
-                        { this.setState({"sim_step2" :"Simulation Step (CoolingProcessOffBed - " + (((time+1)-12)*100/1).toFixed(1) + "%)", "step":time  }) }
-                    else 
-                        { this.setState({"sim_step2" :"Simulation Step (DepositionProcess - " +  (((time+1))*100/9).toFixed(1) + "%)", "step":time  }) }
                 }
                 /**
                 * This method configure all children components to a new slice 
@@ -294,7 +290,7 @@ require.undef('A3DWidget')
                     children.push(React.createElement("div", {key:this.uuids[1], className:"VTKComponentLabel", ref:this.message}, "Loading..."));
                     children.push(React.createElement(VtkComponentColors, {key:this.uuids[2], ref:this.color, deformation:32, variable:self.dim_name, onDisplacement:function(disp){self.onDisplacement(disp)}, onSelected:function(sel){ self.selectLut(sel)}, onChange:function(min,max){self.onChangeRange(min,max)}}))
                     children.push(React.createElement(VtkComponentCamera, {key:this.uuids[3], ref:this.cameras, onClick:function(u,v){ self.rotateXYZ(u,v)}, onScreenShot:function(e){ self.saveImage()}}));
-                    children.push(React.createElement(Material.Slider, {key:this.uuids[4], marks:true, value:this.state.step, min:0, max:12, step:1, onChange:function(e,s){self.selectTimeLegend(s)}}));
+                    children.push(React.createElement(Material.Slider, {key:this.uuids[4], marks:true, value:this.state.step, min:0, max:this.props.samples-1, step:1, onChange:function(e,s){self.selectTimeLegend(s)}}));
                     
                     children.push(React.createElement("div", {key:Util.create_UUID(), style:{display:"flex"}}, [React.createElement("div", {key:Util.create_UUID(), style:{flex:"1"}, className:"VTKComponentLabel"}, self.state.sim_step1),
                     React.createElement("div", {key:Util.create_UUID(), style:{flex:"1"}, className:"VTKComponentLabel"}, self.state.sim_step2)]));
@@ -1535,7 +1531,7 @@ require.undef('A3DWidget')
                     super(props);
                     let self=this;
                     this.state = {
-                        'filename' : backbone.model.get('filename'), 
+                        'filenames' : backbone.model.get('filenames'), 
                         'variable' : backbone.model.get('variable'), 
                         'plane' : backbone.model.get('plane'),
                         'samples' : backbone.model.get('samples'),
@@ -1546,14 +1542,14 @@ require.undef('A3DWidget')
                 render(){
                     let self = this;
                     var children = Array()
-                    if (this.state.filename != undefined && this.state.filename != ""){
+                    if (this.state.filenames != undefined && this.state.filenames.length >0){
                         if (this.state.variable != undefined && this.state.variable != "")
                             ;//children.push();
                     } 
                     var div = React.createElement("div", {key:Util.create_UUID(), className:"VtkComponentLoader"}, [
                         React.createElement(VTKComponent, {
                             key:'a3dwidgetid', 
-                            filename:this.state.filename, 
+                            filenames:this.state.filenames, 
                             variable:this.state.variable, 
                             plane:this.state.plane, 
                             samples:this.state.samples, 
@@ -1577,8 +1573,8 @@ require.undef('A3DWidget')
                 backbone.listenTo(backbone.model, 'change', this.onChange.bind(this));
             }
             A3DWidget.prototype.setState = function(state, callback){
-                if('filename' in state){
-                    state['filename'] = String(state['filename']);
+                if('filenames' in state){
+                    state['filenames'] = (state['filenames']);
                 } else if('variable' in state){
                     state['variable'] = String(state['variable']);
                 } else if('plane' in state){
