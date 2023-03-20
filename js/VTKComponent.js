@@ -970,77 +970,81 @@ require.undef('A3DWidget')
                     this.updatePolydata(this.scalefactor);
                     this.n_samples = readers.length
                     this.label = label
-                    this.current_time = this.n_samples-1
-                    this.current_slice = Math.floor(this.n_samples/2)
-                    var ranges_l = new Array (this.n_samples)
-                    var ranges_h = new Array (this.n_samples)
-                    var bounds = null;
-                    for (var i=this.n_samples-1; i>=0; i--){
-                        var arraybyname = this.polydata[i].getOutputData(0).getPointData().getArrayByName(label);
-                        if (arraybyname != null){
-                            if (bounds == null && readers[i].getOutputData(0).getBounds() != null){
-                                bounds = readers[i].getOutputData(0).getBounds()
-                                this.setupAxes(bounds)
-                            }	
-                            var range = arraybyname.getRange()
-                            ranges_l[i]=range[0]
-                            ranges_h[i]=range[1]
-                        } else {
-                            ranges_l[i]=null;
-                            ranges_h[i]=null;
+                    if (this.n_samples > 0){
+                        this.current_time = this.n_samples-1
+                        this.current_slice = Math.floor(this.n_samples/2)
+                        var ranges_l = new Array (this.n_samples)
+                        var ranges_h = new Array (this.n_samples)
+                        var bounds = null;
+                        for (var i=this.n_samples-1; i>=0; i--){
+                            var arraybyname = this.polydata[i].getOutputData(0).getPointData().getArrayByName(label);
+                            if (arraybyname != null){
+                                if (bounds == null && readers[i].getOutputData(0).getBounds() != null){
+                                    bounds = readers[i].getOutputData(0).getBounds()
+                                    this.setupAxes(bounds)
+                                }	
+                                var range = arraybyname.getRange()
+                                ranges_l[i]=range[0]
+                                ranges_h[i]=range[1]
+                            } else {
+                                ranges_l[i]=null;
+                                ranges_h[i]=null;
+                            }
                         }
+                        var min_range = Math.min(...ranges_l.filter(i => i !== null))
+                        var max_range = Math.max(...ranges_h.filter(i => i !== null))
+                        this.range = [min_range, max_range]
+
+                        var ofun = vtk.Common.DataModel.vtkPiecewiseFunction.newInstance()
+                        //ofun.addPoint(min_range, 1);
+                        ofun.addPoint(-0.01, 1);
+                        ofun.addPoint(0.0, 0);
+                        ofun.addPoint(0.01, 1);
+                        //ofun.addPoint(max_range, 1);
+
+                        this.mainMapper.setLookupTable(this.lut);
+                        this.mainMapper.setScalarModeToUsePointFieldData();
+                        this.mainMapper.setArrayAccessMode(this.mainMapper.BY_NAME);
+                        this.mainMapper.setColorByArrayName(label);
+                        this.mainMapper.setScalarVisibility(true);
+                        this.mainMapper.setScalarRange(this.range);
+                        this.mainMapper.setInputData(this.polydata[this.current_time].getOutputData(0));
+                        this.mainWindow.getRenderer().setBackground(1, 1, 1)
+                        this.mainWindow.getRenderer().addActor(this.mainActor);
+                        this.mainWindow.getRenderer().addActor(this.baseActor);
+                        this.mainWindow.getRenderer().resetCamera();
+                        this.mainWindow.getRenderWindow().render(); 
+
+
+                        this.surfaceMapper.setLookupTable(this.lut);
+                        this.surfaceMapper.setScalarModeToUsePointFieldData();
+                        this.surfaceMapper.setArrayAccessMode(this.mainMapper.BY_NAME);
+                        this.surfaceMapper.setColorByArrayName(label);
+                        this.surfaceMapper.setScalarVisibility(true);
+                        this.surfaceMapper.setScalarRange(this.range);
+                        let next = this.current_time+1;
+                        if (next >= this.polydata.length)
+                            next = this.current_time;
+                        this.surfaceMapper.setInputData(this.readers[next].getOutputData(0));
+
+
+                        this.sliceWindow.getRenderer().setBackground(1, 1, 1)
+                        this.sliceWindow.getRenderer().addActor(this.surfaceActor);
+                        this.sliceWindow.getRenderer().addActor(this.baseActor);        
+                        this.sliceWindow.getRenderer().resetCamera();
+                        this.sliceWindow.getRenderWindow().render(); 
+
+                        this.createTimeLegend();
+                        this.createLutLegend();        
+                        this.createViewLegend();
+                        this.drawColorList();
+                        this.selectLut("rainbow") // Default Color
+                        this.mainWindow.resize() //Forcing resize to get dimensions of the final container
+                        this.sliceWindow.resize() //Forcing resize to get dimensions of the final container
+                        return true;
+                    } else {
+                        return false;
                     }
-                    var min_range = Math.min(...ranges_l.filter(i => i !== null))
-                    var max_range = Math.max(...ranges_h.filter(i => i !== null))		
-                    this.range = [min_range, max_range]
-
-                    var ofun = vtk.Common.DataModel.vtkPiecewiseFunction.newInstance()
-                    //ofun.addPoint(min_range, 1);
-                    ofun.addPoint(-0.01, 1);
-                    ofun.addPoint(0.0, 0);
-                    ofun.addPoint(0.01, 1);
-                    //ofun.addPoint(max_range, 1);
-
-                    this.mainMapper.setLookupTable(this.lut);
-                    this.mainMapper.setScalarModeToUsePointFieldData();
-                    this.mainMapper.setArrayAccessMode(this.mainMapper.BY_NAME);
-                    this.mainMapper.setColorByArrayName(label);
-                    this.mainMapper.setScalarVisibility(true);
-                    this.mainMapper.setScalarRange(this.range);
-                    this.mainMapper.setInputData(this.polydata[this.current_time].getOutputData(0));
-                    this.mainWindow.getRenderer().setBackground(1, 1, 1)
-                    this.mainWindow.getRenderer().addActor(this.mainActor);
-                    this.mainWindow.getRenderer().addActor(this.baseActor);
-                    this.mainWindow.getRenderer().resetCamera();
-                    this.mainWindow.getRenderWindow().render(); 
-
-
-                    this.surfaceMapper.setLookupTable(this.lut);
-                    this.surfaceMapper.setScalarModeToUsePointFieldData();
-                    this.surfaceMapper.setArrayAccessMode(this.mainMapper.BY_NAME);
-                    this.surfaceMapper.setColorByArrayName(label);
-                    this.surfaceMapper.setScalarVisibility(true);
-                    this.surfaceMapper.setScalarRange(this.range);
-                    let next = this.current_time+1;
-                    if (next >= this.polydata.length)
-                        next = this.current_time;
-                    this.surfaceMapper.setInputData(this.readers[next].getOutputData(0));
-
-                    
-                    this.sliceWindow.getRenderer().setBackground(1, 1, 1)
-                    this.sliceWindow.getRenderer().addActor(this.surfaceActor);
-                    this.sliceWindow.getRenderer().addActor(this.baseActor);        
-                    this.sliceWindow.getRenderer().resetCamera();
-                    this.sliceWindow.getRenderWindow().render(); 
-
-                    this.createTimeLegend();
-                    this.createLutLegend();        
-                    this.createViewLegend();
-                    this.drawColorList();
-                    this.selectLut("rainbow") // Default Color
-                    this.mainWindow.resize() //Forcing resize to get dimensions of the final container
-                    this.sliceWindow.resize() //Forcing resize to get dimensions of the final container
-                    return true;
                 }
 
 
