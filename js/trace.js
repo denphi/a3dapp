@@ -1,18 +1,18 @@
-require.config({
-  paths: {
-    'react': 'https://unpkg.com/react@16.8.6/umd/react.development',
-    'react-dom': 'https://unpkg.com/react-dom@16.8.6/umd/react-dom.development',
-    'material-ui': 'https://unpkg.com/@material-ui/core@latest/umd/material-ui.development',
-    'plotlycomponent': 'https://unpkg.com/react-plotly.js@2.3/dist/create-plotly-component',
-    'plotly': 'https://cdn.plot.ly/plotly-1.52.0.min',
-    'math': 'https://cdnjs.cloudflare.com/ajax/libs/mathjs/6.6.1/math.min',
-    'axios': 'https://unpkg.com/axios/dist/axios.min',
-    'localforage' : 'https://www.unpkg.com/localforage@1.7.3/dist/localforage.min',
-    'number-format': 'https://unpkg.com/react-number-format@4.3.1/dist/react-number-format',
-    'prop-types': 'https://unpkg.com/prop-types@15.6/prop-types.min',
-    'vtk':'https://unpkg.com/vtk.js@14.15.8/dist/vtk'
-  }
-});
+//require.config({
+//  paths: {
+//    'react': 'https://unpkg.com/react@16.8.6/umd/react.development',
+//    'react-dom': 'https://unpkg.com/react-dom@16.8.6/umd/react-dom.development',
+//    'material-ui': 'https://unpkg.com/@material-ui/core@latest/umd/material-ui.development',
+//    'plotlycomponent': 'https://unpkg.com/react-plotly.js@2.3/dist/create-plotly-component',
+//    'plotly': 'https://cdn.plot.ly/plotly-1.52.0.min',
+//    'math': 'https://cdnjs.cloudflare.com/ajax/libs/mathjs/6.6.1/math.min',
+//    'axios': 'https://unpkg.com/axios/dist/axios.min',
+//    'localforage' : 'https://www.unpkg.com/localforage@1.7.3/dist/localforage.min',
+//    'number-format': 'https://unpkg.com/react-number-format@4.3.1/dist/react-number-format',
+//    'prop-types': 'https://unpkg.com/prop-types@15.6/prop-types.min',
+//    'vtk':'https://unpkg.com/vtk.js@14.15.8/dist/vtk'
+//  }
+//});
 require.undef('TraceWidget')
   define('TraceWidget', [
     '@jupyter-widgets/base',
